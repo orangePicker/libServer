@@ -29,9 +29,12 @@ export class UserController {
     @Req() req: Request,
   ) {
     try {
+      const code = session.code;
+      // 销毁session
+      session.destroy && session.destroy();
       return await this.userService.create(
         createUserDto,
-        session.code as string,
+        code as string,
         req.user.auth,
       );
     } catch (error) {
@@ -42,7 +45,10 @@ export class UserController {
   // 登录
   @PostMapping('login')
   async login(@Body() loginUserDto: LoginUserDto, @Session() session) {
-    return await this.userService.login(loginUserDto, session.code as string);
+    const code = session?.code;
+    // 销毁session
+    session.destroy && session.destroy();
+    return await this.userService.login(loginUserDto, code as string);
   }
 
   // 查询用户信息
