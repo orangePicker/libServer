@@ -9,15 +9,4 @@ export class UtilsService {
     const code = this.captchaService.create();
     return code;
   }
-
-  static filterObject(obj: object) {
-    const data = {};
-    const keys = Object.keys(obj);
-    keys.forEach((key) => {
-      if (obj[key] || obj[key] === 0) {
-        data[key] = obj[key];
-      }
-    });
-    return data;
-  }
 }

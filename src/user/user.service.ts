@@ -1,11 +1,11 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from 'src/jwt/jwt.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FindUserDto } from './dto/find-user.dto';
-import { UtilsService } from 'src/utils/utils.service';
+import { filterObject, serviceReturn } from 'src/utils/utils';
 // import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
@@ -17,9 +17,8 @@ export class UserService {
 
   // 查询所有用户
   async queryAllUser(queryUsers: FindUserDto) {
-    try {
-      const filterQuery = UtilsService.filterObject(queryUsers);
-      return await this.PrimsmaDB.user.findMany({
+      const filterQuery = filterObject(queryUsers);
+      const users = await this.PrimsmaDB.user.findMany({
         where: { ...filterQuery },
         select: {
           id: true,
@@ -29,14 +28,10 @@ export class UserService {
           auth: true,
           status: true,
           password: false,
-          book: false,
+          book_book_userTouser: false,
         },
       });
-    } catch (error) {
-      console.log(error);
-
-      throw new HttpException('查询所有用户失败 Service', 500);
-    }
+      return serviceReturn('查询成功',true,users)
   }
 
   // 注册用户
@@ -45,7 +40,6 @@ export class UserService {
     sessionCode: string,
     auth: number,
   ) {
-    try {
       if (auth !== -1) {
         // noSuper Check
         // 验证码
@@ -54,18 +48,12 @@ export class UserService {
           createUserDto.code.toLocaleLowerCase() !==
             sessionCode.toLocaleLowerCase()
         ) {
-          return {
-            code: 0,
-            message: '验证码错误',
-          };
+          return serviceReturn('验证码错误')
         }
 
         // 密码一致性
         if (createUserDto.password !== createUserDto.enterPassword) {
-          return {
-            code: 0,
-            message: '两次密码不一致',
-          };
+          return serviceReturn('两次密码不一致')
         }
       }
 
@@ -76,10 +64,7 @@ export class UserService {
         },
       });
       if (checkResult.length >= 1) {
-        return {
-          code: 0,
-          message: '此账号已被使用',
-        };
+        return serviceReturn('此账号已被使用');
       }
       const regResult = await this.PrimsmaDB.user.createMany({
         data: {
@@ -89,22 +74,13 @@ export class UserService {
         },
       });
       if (!regResult) {
-        return {
-          code: 0,
-          message: '注册失败',
-        };
+        return serviceReturn('注册失败');
       }
-      return {
-        message: '注册成功',
-      };
-    } catch (error) {
-      throw new HttpException('注册失败 Service', 500);
-    }
+      return serviceReturn('注册成功',true)
   }
 
   // 登录验证
   async login(loginUserDto: LoginUserDto, sessionCode: string) {
-    try {
       let Icode = sessionCode;
       const { account, password, code } = loginUserDto;
       if (!Icode) {
@@ -112,10 +88,7 @@ export class UserService {
       }
       // 检查验证码
       if (Icode.toLocaleLowerCase() !== code.toLocaleLowerCase()) {
-        return {
-          code: 0,
-          message: '验证码错误',
-        };
+        return serviceReturn('验证码错误')
       }
 
       // 验证账号和密码
@@ -132,47 +105,34 @@ export class UserService {
           auth: true,
           status: true,
           password: false,
-          book: false,
         },
       });
       if (userInfo.length !== 1) {
-        return {
-          code: 0,
-          message: '账号或密码错误',
-        };
+        return serviceReturn('账号或密码错误')
       }
-      return {
-        message: '登录成功',
-        data: {
-          userInfo: userInfo[0],
-          token: this.JwtS.createJWT(userInfo[0]),
-        },
-      };
-    } catch (error) {
-      throw new HttpException('登陆失败 Service', 500);
-    }
+
+      const data = {
+        userInfo: userInfo[0],
+        token: this.JwtS.createJWT(userInfo[0]),
+      }
+      return serviceReturn('登录成功',true,data)
   }
 
   // 查询用户
   async queryUser(userId: number) {
-    try {
       const userInfo = await this.PrimsmaDB.user.findFirst({
         where: {
           id: userId,
         },
       });
       delete userInfo.password;
-      return userInfo;
-    } catch (error) {
-      throw new HttpException('', 500);
-    }
+      return userInfo ? serviceReturn('查询成功',true,userInfo) : serviceReturn('用户不存在');
   }
 
   // 更新用户
   async updateUser(updateUser: UpdateUserDto) {
-    try {
-      const filterQuery = UtilsService.filterObject(updateUser);
-      return await this.PrimsmaDB.user.update({
+      const filterQuery = filterObject(updateUser);
+      const result = await this.PrimsmaDB.user.update({
         where: {
           id: updateUser.id,
         },
@@ -180,8 +140,6 @@ export class UserService {
           ...filterQuery,
         },
       });
-    } catch (error) {
-      throw new HttpException('', 500);
-    }
+      return result ? serviceReturn('修改成功',true) : serviceReturn('修改失败')
   }
 }

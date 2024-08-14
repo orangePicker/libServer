@@ -4,9 +4,9 @@ import {
   Body,
   Session,
   UseInterceptors,
-  BadRequestException,
   Req,
   HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -32,42 +32,42 @@ export class UserController {
       const code = session.code;
       // 销毁session
       session.destroy && session.destroy();
-      return await this.userService.create(
+      const {message,success} =  await this.userService.create(
         createUserDto,
         code as string,
         req.user.auth,
       );
+
+      return success ? {message} : {message,code:0}
     } catch (error) {
-      throw new BadRequestException(error.message);
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   // 登录
   @PostMapping('login')
   async login(@Body() loginUserDto: LoginUserDto, @Session() session) {
-    const code = session?.code;
+    try {
+      const code = session?.code;
     // 销毁session
     session.destroy && session.destroy();
-    return await this.userService.login(loginUserDto, code as string);
+    const {message,success,data} = await this.userService.login(loginUserDto, code as string);
+    return success ? {message,data} : {message}
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
   }
 
   // 查询用户信息
   @PostMapping('queryUser')
   async queryUser(@Req() req: Request) {
     try {
-      const data = await this.userService.queryUser(req.user.id);
-      if (!data) {
-        return {
-          code: 0,
-          message: '用户不存在',
-        };
-      }
-      return {
-        message: '查询成功',
-        data,
-      };
+      const {message,success,data} = await this.userService.queryUser(req.user.id);
+
+      return success ? {message,data} : {message,code:0}
     } catch (error) {
-      throw new HttpException('', 500);
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -75,16 +75,16 @@ export class UserController {
   @PostMapping('queryAllUser')
   async queryAllUser(@Body() body: FindUserDto) {
     try {
-      const result = await this.userService.queryAllUser(body);
+      const {message,data} = await this.userService.queryAllUser(body);
       return {
-        message: '查询成功',
+        message,
         data: {
-          users: result,
-          total: result.length || 0,
+          users: data,
+          total: data.length || 0,
         },
       };
     } catch (error) {
-      throw new HttpException('', 500);
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -100,19 +100,11 @@ export class UserController {
         ...body,
         id,
       };
-      const result = await this.userService.updateUser(userData);
-      if (!result) {
-        return {
-          code: 0,
-          message: '更新用户失败',
-        };
-      }
-      return {
-        data: null,
-        message: '修改成功',
-      };
+      const {message,success} = await this.userService.updateUser(userData);
+
+      return success ? {message} : {message,code:0}
     } catch (error) {
-      throw new HttpException('', 500);
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

@@ -1,10 +1,9 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { AddBookDto } from './dto/add-book.dto';
-// import { UpdateBookDto } from './dto/update-book.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FindBookDto } from './dto/find-bool.dto';
-import { UtilsService } from 'src/utils/utils.service';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { filterObject, serviceReturn } from 'src/utils/utils';
 
 @Injectable()
 export class BookService {
@@ -12,7 +11,6 @@ export class BookService {
 
   // 添加书籍
   async addBook(bookInfo: AddBookDto) {
-    try {
       // 验证书是否存在
       const book = await this.prismaDB.book.findMany({
         where: {
@@ -20,10 +18,7 @@ export class BookService {
         },
       });
       if (book.length >= 1) {
-        return {
-          message: '这本书已存在',
-          code: 0,
-        };
+        return serviceReturn('这本书已存在')
       }
 
       // 添加书本
@@ -34,28 +29,26 @@ export class BookService {
           lendState: bookInfo.lendState,
         },
       });
-      if (addRes) {
-        return {
-          message: '添加成功',
-        };
+      if (!addRes) {
+        return serviceReturn('添加失败')
       }
-    } catch (error) {
-      throw new HttpException('书籍添加失败 Service', 500);
-    }
+      return serviceReturn('添加成功',true)
   }
 
   // 查询书籍
   async querBooks(query: FindBookDto) {
     try {
-      const filterQuery = UtilsService.filterObject(query);
-      return await this.prismaDB.book.findMany({
+      const filterQuery = filterObject(query);
+      const result = await this.prismaDB.book.findMany({
         where: {
           ...filterQuery,
         },
       });
+
+      return serviceReturn('',true,result)
     } catch (error) {
       console.log(error);
-      throw new HttpException('查询书籍失败 Service', 500);
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -63,8 +56,8 @@ export class BookService {
   async editBook(bookInfo: UpdateBookDto) {
     try {
       const { id, bookTitle, author, lendState } = bookInfo;
-      // 添加书本
-      return await this.prismaDB.book.update({
+      // 编辑书本
+      const result = await this.prismaDB.book.update({
         where: {
           id,
         },
@@ -74,8 +67,12 @@ export class BookService {
           lendState,
         },
       });
+
+      return result
+        ? serviceReturn('编辑成功', true)
+        : serviceReturn('编辑失败');
     } catch (error) {
-      throw new HttpException('书籍添加失败 Service', 500);
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -90,16 +87,10 @@ export class BookService {
         },
       });
       if (books.length <= 0) {
-        return {
-          message: '不存在该书籍',
-          code: 0,
-        };
+        return serviceReturn('书籍不存在');
       }
       if (books[0].lendState === 1) {
-        return {
-          message: '书籍正在出借中',
-          code: 0,
-        };
+        return serviceReturn('书籍正在出借中');
       }
       const result = await this.prismaDB.book.delete({
         where: {
@@ -107,16 +98,11 @@ export class BookService {
         },
       });
       if (!result) {
-        return {
-          message: '删除失败',
-          code: 0,
-        };
+        return serviceReturn('删除失败');
       }
-      return {
-        message: '删除成功',
-      };
+      return serviceReturn('删除成功', true);
     } catch (error) {
-      throw new HttpException('书籍删除失败 Service', 500);
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

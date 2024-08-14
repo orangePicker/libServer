@@ -13,7 +13,7 @@ export class JwtService {
   }
 
   static checkJwt(req: Request, res: Response, next: NextFunction) {
-    console.log('check JWT');
+    // console.log('check JWT');
 
     const witheUrl = ['/user/login', '/util/getCode'];
     const url = new URL(`http://${req.hostname}:8000${req.url}`);

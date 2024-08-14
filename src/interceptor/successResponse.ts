@@ -27,7 +27,6 @@ export class SuccessReaponse<T> implements NestInterceptor {
     if (req.method === 'POST') {
       res.statusCode = HttpStatus.OK;
     }
-    console.log('NestInterceptor');
 
     return next.handle().pipe(
       map(

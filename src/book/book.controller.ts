@@ -4,6 +4,7 @@ import {
   Body,
   HttpException,
   UseInterceptors,
+  HttpStatus,
 } from '@nestjs/common';
 import { BookService } from './book.service';
 import { AddBookDto } from './dto/add-book.dto';
@@ -21,41 +22,42 @@ export class BookController {
   @PostMapping('addBook')
   async addBook(@Body() bookInfo: AddBookDto) {
     try {
-      const result = await this.bookService.addBook(bookInfo);
-      return {
-        ...result,
-      };
+      const { message, success } = await this.bookService.addBook(bookInfo);
+      return success ? { message } : { message, code: 0 };
     } catch (error) {
-      throw new HttpException('addBookErr Ctrl', 500);
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   // 查询
   @PostMapping('queryBooks')
   async querBooks(@Body() query: FindBookDto) {
-    const books = await this.bookService.querBooks(query);
-    return {
-      data: {
-        books,
-        total: books.length || 0,
-      },
-    };
+    try {
+      const { data } = await this.bookService.querBooks(query);
+
+      return {
+        data: {
+          books: data,
+          total: data.length || 0,
+        },
+      };
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   // 编辑
   @PostMapping('editBook')
   async editBook(@Body() bookInfo: UpdateBookDto) {
     try {
-      const res = await this.bookService.editBook(bookInfo);
-      if (!res) {
-        return {
-          message: '修改失败',
-          code: 0,
-        };
-      }
-      return {
-        message: '修改成功',
-      };
+      const { message, success } = await this.bookService.editBook(bookInfo);
+
+      return success
+        ? { message }
+        : {
+            message,
+            code: 0,
+          };
     } catch (error) {
       throw new Error(error);
     }
@@ -65,9 +67,18 @@ export class BookController {
   @PostMapping('deleteBook')
   async deleteBook(@Body() bookInfo: UpdateBookDto) {
     try {
-      return await this.bookService.deleteBook(bookInfo);
+      const { message, success } = await this.bookService.deleteBook(bookInfo);
+      if (!success) {
+        return {
+          message,
+          code: 0,
+        };
+      }
+      return {
+        message,
+      };
     } catch (error) {
-      throw new HttpException('deleteBookErr Ctrl', 500);
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }
