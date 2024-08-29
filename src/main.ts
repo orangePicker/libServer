@@ -7,6 +7,10 @@ import { JwtService } from './jwt/jwt.service';
 import { config } from 'dotenv';
 import { LoggerMiddleware } from './middleware/logger/LoggerMiddleware';
 import * as dayjs from 'dayjs';
+import { NextFunction, Request } from 'express';
+
+// 实例化日志
+const loggerMiddleware = new LoggerMiddleware();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -36,11 +40,10 @@ async function bootstrap() {
   );
 
   // 日志
-  const loggerMiddleware = new LoggerMiddleware()
-  app.use((req,res,next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     const text = `[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] ${req.method} ${req.url}\n`;
-    loggerMiddleware.showLogger(text)
-    next()
+    loggerMiddleware.showLogger(text);
+    next();
   });
 
   // 异常过滤

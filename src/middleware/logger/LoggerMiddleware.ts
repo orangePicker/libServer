@@ -1,13 +1,18 @@
 import * as fs from 'node:fs';
 import * as log4js from 'log4js';
+import * as path from 'node:path';
+import { config } from 'dotenv';
 
 export class LoggerMiddleware {
-  private logPath = 'src/log/runtime-logger.log';
-  private errLogPath = 'src/log/error-logger.log';
+  private logFileName = 'runtime-logger.log';
+  private errLogFileName = 'error-logger.log';
+  private logPath = path.join(__dirname, config().parsed.DEV_LOG_PATH);
+  private errLogPath = path.join(__dirname, config().parsed.DEV_LOG_PATH);
   private logger: log4js.Logger = null;
-  constructor() {
-    console.log('new logger');
 
+  constructor() {
+    this.checkDir(this.logPath, this.logFileName);
+    this.checkDir(this.errLogPath, this.errLogFileName);
     this.createLogger();
   }
 
@@ -15,7 +20,12 @@ export class LoggerMiddleware {
   public showLogger = (text: string, type: string = 'info') => {
     this.logger.level = type;
     type === 'info' ? this.logger.info(text) : this.logger.error(text);
-    this.saveLogs(text, type === 'info' ? this.logPath : this.errLogPath);
+    this.saveLogs(
+      text,
+      type === 'info'
+        ? path.join(this.logPath, this.logFileName)
+        : path.join(this.errLogPath, this.errLogFileName),
+    );
   };
 
   // 保存日志
@@ -37,4 +47,29 @@ export class LoggerMiddleware {
   createLogger() {
     this.logger = log4js.getLogger();
   }
+
+  // 检查目录
+  checkDir = (checkPath: string, fileName: string) => {
+    const fullPath = path.join(checkPath, fileName);
+    // 检查文件是否存在
+    fs.access(fullPath, (err) => {
+      if (err) {
+        console.log('文件不存在，尝试重新创建...');
+        // 创建目录
+        fs.mkdir(checkPath, (err) => {
+          err
+            ? console.log('mkdie失败:' + err)
+            : console.log(`${checkPath} 已创建!`);
+        });
+        // 创建文件
+        fs.appendFile(fullPath, '', 'utf-8', (err) => {
+          err
+            ? console.log('文件重新创建失败!')
+            : console.log('文件重新创建成功!');
+        });
+      } else {
+        console.log(`文件 ${fullPath} 存在!`);
+      }
+    });
+  };
 }
