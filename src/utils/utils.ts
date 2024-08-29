@@ -1,3 +1,5 @@
+import { config } from 'dotenv';
+
 export const objToString = (obj: object) => JSON.stringify(obj);
 
 export const filterObject = (obj: object) => {
@@ -22,3 +24,5 @@ export const serviceReturn = (
     data,
   };
 };
+
+export const myEnv = config().parsed;

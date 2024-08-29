@@ -1,13 +1,13 @@
 import * as fs from 'node:fs';
 import * as log4js from 'log4js';
 import * as path from 'node:path';
-import { config } from 'dotenv';
+import { myEnv } from 'src/utils/utils';
 
 export class LoggerMiddleware {
   private logFileName = 'runtime-logger.log';
   private errLogFileName = 'error-logger.log';
-  private logPath = path.join(__dirname, config().parsed.DEV_LOG_PATH);
-  private errLogPath = path.join(__dirname, config().parsed.DEV_LOG_PATH);
+  private logPath = path.join(__dirname, myEnv.LOG_PATH);
+  private errLogPath = path.join(__dirname, myEnv.LOG_PATH);
   private logger: log4js.Logger = null;
 
   constructor() {
@@ -51,6 +51,7 @@ export class LoggerMiddleware {
   // 检查目录
   checkDir = (checkPath: string, fileName: string) => {
     const fullPath = path.join(checkPath, fileName);
+
     // 检查文件是否存在
     fs.access(fullPath, (err) => {
       if (err) {
@@ -58,14 +59,14 @@ export class LoggerMiddleware {
         // 创建目录
         fs.mkdir(checkPath, (err) => {
           err
-            ? console.log('mkdie失败:' + err)
+            ? console.log('创建目录失败' + err)
             : console.log(`${checkPath} 已创建!`);
         });
         // 创建文件
         fs.appendFile(fullPath, '', 'utf-8', (err) => {
           err
             ? console.log('文件重新创建失败!')
-            : console.log('文件重新创建成功!');
+            : console.log('文件重新创建成功!' + fullPath);
         });
       } else {
         console.log(`文件 ${fullPath} 存在!`);
