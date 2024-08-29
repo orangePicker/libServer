@@ -32,13 +32,13 @@ export class UserController {
       const code = session.code;
       // 销毁session
       session.destroy && session.destroy();
-      const {message,success} =  await this.userService.create(
+      const { message, success } = await this.userService.create(
         createUserDto,
         code as string,
-        req.user.auth,
+        req.user?.auth,
       );
 
-      return success ? {message} : {message,code:0}
+      return success ? { message } : { message, code: 0 };
     } catch (error) {
       throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -49,23 +49,27 @@ export class UserController {
   async login(@Body() loginUserDto: LoginUserDto, @Session() session) {
     try {
       const code = session?.code;
-    // 销毁session
-    session.destroy && session.destroy();
-    const {message,success,data} = await this.userService.login(loginUserDto, code as string);
-    return success ? {message,data} : {message}
+      // 销毁session
+      session.destroy && session.destroy();
+      const { message, success, data } = await this.userService.login(
+        loginUserDto,
+        code as string,
+      );
+      return success ? { message, data } : { message };
     } catch (error) {
       throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    
   }
 
   // 查询用户信息
   @PostMapping('queryUser')
   async queryUser(@Req() req: Request) {
     try {
-      const {message,success,data} = await this.userService.queryUser(req.user.id);
+      const { message, success, data } = await this.userService.queryUser(
+        req.user.id,
+      );
 
-      return success ? {message,data} : {message,code:0}
+      return success ? { message, data } : { message, code: 0 };
     } catch (error) {
       throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -75,7 +79,7 @@ export class UserController {
   @PostMapping('queryAllUser')
   async queryAllUser(@Body() body: FindUserDto) {
     try {
-      const {message,data} = await this.userService.queryAllUser(body);
+      const { message, data } = await this.userService.queryAllUser(body);
       return {
         message,
         data: {
@@ -100,9 +104,9 @@ export class UserController {
         ...body,
         id,
       };
-      const {message,success} = await this.userService.updateUser(userData);
+      const { message, success } = await this.userService.updateUser(userData);
 
-      return success ? {message} : {message,code:0}
+      return success ? { message } : { message, code: 0 };
     } catch (error) {
       throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }

@@ -1,6 +1,7 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import * as jwt from 'jsonwebtoken';
+import { jwtWhite } from 'src/config/config';
 import { UserDto } from 'src/user/dto/user.dto';
 import { myEnv } from 'src/utils/utils';
 
@@ -13,11 +14,8 @@ export class JwtService {
   }
 
   static checkJwt(req: Request, res: Response, next: NextFunction) {
-    // console.log('check JWT');
-
-    const witheUrl = ['/user/login', '/util/getCode'];
     const url = new URL(`http://${req.hostname}:8000${req.url}`);
-    if (witheUrl.includes(url.pathname)) {
+    if (jwtWhite.includes(url.pathname)) {
       return next();
     }
     try {

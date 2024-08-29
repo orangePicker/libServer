@@ -1,4 +1,11 @@
-import { Controller, Get as GetMapping, Header, Session } from '@nestjs/common';
+import {
+  Controller,
+  Get as GetMapping,
+  Header,
+  HttpException,
+  HttpStatus,
+  Session,
+} from '@nestjs/common';
 import { UtilsService } from './utils.service';
 
 @Controller('util')
@@ -7,8 +14,12 @@ export class UtilsController {
   @GetMapping('getCode')
   @Header('Content-type', 'image/svg+xml')
   createCaptcha(@Session() session) {
-    const code = this.utilsService.createCaptcha();
-    session.code = code.text;
-    return code.data;
+    try {
+      const code = this.utilsService.createCaptcha();
+      session.code = code.text;
+      return code.data;
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }
